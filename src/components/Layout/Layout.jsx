@@ -5,6 +5,7 @@ import Footer from './Footer'
 import SkipLink from '../common/SkipLink'
 import AccessibilityToolbar from '../accessibility/AccessibilityToolbar'
 import SimpleChatbot from '../chatbot/SimpleChatbot'
+import PageReader from '../accessibility/PageReader'
 import { useAccessibility } from '../../contexts/AccessibilityContext'
 
 /**
@@ -44,6 +45,9 @@ function Layout({ children }) {
       
       {/* Erişilebilirlik Araç Çubuğu */}
       <AccessibilityToolbar />
+      
+      {/* Sayfa Okuyucu - Görme Engelliler için */}
+      <PageReader />
       
       {/* Basit Chatbot */}
       <SimpleChatbot />
