@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Erişilebilirlik için özel stiller */
+@layer base {
+  /* Focus göstergesi - klavye navigasyonu için kritik */
+  *:focus {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+  }
+
+  *:focus:not(:focus-visible) {
+    @apply ring-0 ring-offset-0;
+  }
+
+  *:focus-visible {
+    @apply ring-2 ring-primary-500 ring-offset-2;
+  }
+
+  /* Skip to content link - ekran okuyucu kullanıcıları için */
+  .skip-to-content {
+    @apply absolute -top-full left-0 bg-primary-600 text-white px-4 py-2 z-50;
+    @apply focus:top-0 transition-all;
+  }
+
+  /* Yüksek kontrast modu */
+  .high-contrast {
+    --bg-color: #000000;
+    --text-color: #FFFF00;
+    --border-color: #FFFFFF;
+  }
+
+  .high-contrast * {
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  /* Animasyonları azalt - vestibular bozukluk olan kullanıcılar için */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Temel font ayarları */
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100;
+    @apply transition-colors duration-200;
+  }
+
+  /* Okunabilirlik için optimal satır uzunluğu */
+  p, li {
+    max-width: 70ch;
+  }
+
+  /* Link stilleri - erişilebilirlik için altı çizili */
+  a {
+    @apply underline hover:no-underline;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500;
+  }
+
+  /* Başlık hiyerarşisi */
+  h1 {
+    @apply text-4xl font-bold mb-4;
+  }
+
+  h2 {
+    @apply text-3xl font-bold mb-3;
+  }
+
+  h3 {
+    @apply text-2xl font-semibold mb-2;
+  }
+
+  h4 {
+    @apply text-xl font-semibold mb-2;
+  }
+}
+
+@layer utilities {
+  /* Görsel olarak gizle ama ekran okuyucu için erişilebilir tut */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .sr-only-focusable:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}
+
