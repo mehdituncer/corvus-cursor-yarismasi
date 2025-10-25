@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, X, Send, Loader2, Sparkles } from 'lucide-react'
+import { MessageCircle, X, Send, Loader2, Sparkles, Volume2, VolumeX, Mic, MicOff } from 'lucide-react'
 import Button from '../common/Button'
 import geminiService from '../../services/geminiService'
 
@@ -29,12 +29,95 @@ function SimpleChatbot() {
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [playingIndex, setPlayingIndex] = useState(null)
+  const [isListening, setIsListening] = useState(false)
   const messagesEndRef = useRef(null)
+  const recognitionRef = useRef(null)
 
   // Auto scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Speech Recognition setup
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      recognitionRef.current = new SpeechRecognition()
+      recognitionRef.current.lang = 'tr-TR'
+      recognitionRef.current.continuous = false
+      recognitionRef.current.interimResults = false
+
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript
+        setInput(transcript)
+        setIsListening(false)
+      }
+
+      recognitionRef.current.onerror = (error) => {
+        console.error('Mikrofon hatası:', error)
+        setIsListening(false)
+        if (error.error === 'not-allowed') {
+          alert('Mikrofon izni gerekli. Lütfen tarayıcı ayarlarından mikrofon izni verin.')
+        }
+      }
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false)
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [])
+
+  const handlePlayMessage = (index, text) => {
+    if (!('speechSynthesis' in window)) {
+      alert('Tarayıcınız sesli okuma özelliğini desteklemiyor.')
+      return
+    }
+
+    // Zaten bu mesaj okunuyorsa durdur
+    if (playingIndex === index) {
+      window.speechSynthesis.cancel()
+      setPlayingIndex(null)
+      return
+    }
+
+    // Önceki konuşmayı durdur
+    window.speechSynthesis.cancel()
+
+    // Yeni konuşma başlat
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'tr-TR'
+    utterance.rate = 0.95
+    utterance.pitch = 1
+    utterance.volume = 1
+
+    utterance.onstart = () => setPlayingIndex(index)
+    utterance.onend = () => setPlayingIndex(null)
+    utterance.onerror = () => setPlayingIndex(null)
+
+    window.speechSynthesis.speak(utterance)
+  }
+
+  const handleVoiceInput = () => {
+    if (!recognitionRef.current) {
+      alert('Tarayıcınız sesli girişi desteklemiyor. Chrome veya Edge kullanın.')
+      return
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop()
+      setIsListening(false)
+    } else {
+      recognitionRef.current.start()
+      setIsListening(true)
+    }
+  }
 
   const sendMessage = async (text) => {
     if (!text.trim()) return
@@ -110,13 +193,43 @@ function SimpleChatbot() {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] p-3 rounded-2xl shadow-sm ${
+                  className={`max-w-[85%] rounded-2xl shadow-sm ${
                     msg.role === 'user'
-                      ? 'bg-blue-600 text-white rounded-br-none'
+                      ? 'bg-blue-600 text-white rounded-br-none p-3'
                       : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none'
                   }`}
                 >
-                  <p className="text-sm">{msg.text}</p>
+                  <p className={`text-sm ${msg.role === 'bot' ? 'p-3 pb-2' : ''}`}>
+                    {msg.text}
+                  </p>
+                  
+                  {/* Bot mesajları için ses butonu */}
+                  {msg.role === 'bot' && (
+                    <div className="px-3 pb-2 flex items-center gap-2">
+                      <button
+                        onClick={() => handlePlayMessage(idx, msg.text)}
+                        className={`text-xs px-2 py-1 rounded-full transition-colors flex items-center gap-1 ${
+                          playingIndex === idx
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+                        }`}
+                        aria-label={playingIndex === idx ? 'Okumayı durdur' : 'Sesli oku'}
+                      >
+                        {playingIndex === idx ? (
+                          <>
+                            <VolumeX size={12} />
+                            <span>Durdur</span>
+                          </>
+                        ) : (
+                          <>
+                            <Volume2 size={12} />
+                            <span>▶ Dinle</span>
+                          </>
+                        )}
+                      </button>
+                      <span className="text-xs text-gray-400">Tarayıcı sesi</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -155,15 +268,32 @@ function SimpleChatbot() {
           {/* Input */}
           <div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
             <div className="flex gap-2">
+              {/* Mikrofon Butonu */}
+              <button
+                onClick={handleVoiceInput}
+                disabled={isLoading}
+                className={`p-2 rounded-lg transition-all ${
+                  isListening
+                    ? 'bg-red-600 text-white animate-pulse'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                } disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                aria-label={isListening ? 'Dinlemeyi durdur' : 'Sesli soru sor'}
+              >
+                {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+              </button>
+
+              {/* Text Input */}
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage(input)}
-                placeholder="Sorunuzu yazın..."
-                disabled={isLoading}
+                onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage(input)}
+                placeholder={isListening ? '🎤 Dinleniyor...' : 'Sorunuzu yazın...'}
+                disabled={isLoading || isListening}
                 className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               />
+
+              {/* Send Button */}
               <Button
                 onClick={() => sendMessage(input)}
                 variant="primary"
@@ -174,6 +304,13 @@ function SimpleChatbot() {
                 <Send size={18} />
               </Button>
             </div>
+
+            {/* Listening Indicator */}
+            {isListening && (
+              <p className="text-xs text-center text-red-600 dark:text-red-400 mt-2 animate-pulse font-semibold">
+                🎤 Dinleniyor... Sorunuzu söyleyin
+              </p>
+            )}
           </div>
         </div>
       )}
