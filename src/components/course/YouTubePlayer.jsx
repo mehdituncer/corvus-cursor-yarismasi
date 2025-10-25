@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { Youtube, FileText, Loader2, PlayCircle, CheckCircle } from 'lucide-react'
 import Button from '../common/Button'
 import geminiService from '../../services/geminiService'
@@ -33,32 +33,15 @@ function YouTubePlayer({ videoId: initialVideoId, playlistId, title }) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState(null)
   const [transcriptCache, setTranscriptCache] = useState({})
-  const iframeRef = useRef(null)
 
   const currentVideo = PLAYLIST_VIDEOS.find(v => v.id === currentVideoId) || PLAYLIST_VIDEOS[0]
   
-  // embedUrl'i state'ten oluştur ki değiştiğinde yeniden render olsun
   const embedUrl = playlistId 
-    ? `https://www.youtube.com/embed/${currentVideoId}?list=${playlistId}&rel=0`
-    : `https://www.youtube.com/embed/${currentVideoId}?rel=0`
-
-  // currentVideoId değiştiğinde iframe'i force reload et
-  useEffect(() => {
-    console.log('🎬 Video ID değişti:', currentVideoId)
-    console.log('📺 Embed URL:', embedUrl)
-    console.log('📝 Başlık:', currentVideo.title)
-    
-    // iframe'i force reload et
-    if (iframeRef.current) {
-      console.log('🔄 iframe reload ediliyor...')
-      iframeRef.current.src = embedUrl
-    }
-  }, [currentVideoId, embedUrl, currentVideo.title])
+    ? `https://www.youtube.com/embed/${currentVideoId}?list=${playlistId}&autoplay=0`
+    : `https://www.youtube.com/embed/${currentVideoId}?autoplay=0`
 
   const handleVideoChange = (newVideoId) => {
-    console.log('🔄 handleVideoChange çağrıldı')
-    console.log('   Eski ID:', currentVideoId)
-    console.log('   Yeni ID:', newVideoId)
+    console.log('Video değiştiriliyor:', newVideoId)
     
     // Video ID'sini güncelle
     setCurrentVideoId(newVideoId)
@@ -198,14 +181,8 @@ function YouTubePlayer({ videoId: initialVideoId, playlistId, title }) {
 
         {/* YouTube Video Player */}
         <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
-          {/* Debug bilgisi */}
-          <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded z-10 pointer-events-none">
-            Video ID: {currentVideoId}
-          </div>
-          
           <iframe
-            ref={iframeRef}
-            key={currentVideoId}
+            key={`youtube-${currentVideoId}`}
             src={embedUrl}
             title={currentVideo.title}
             className="w-full h-full"

@@ -4,7 +4,7 @@ import Header from './Header'
 import Footer from './Footer'
 import SkipLink from '../common/SkipLink'
 import AccessibilityToolbar from '../accessibility/AccessibilityToolbar'
-import AIChatbot from '../chatbot/AIChatbot'
+import SimpleChatbot from '../chatbot/SimpleChatbot'
 import { useAccessibility } from '../../contexts/AccessibilityContext'
 
 /**
@@ -45,8 +45,8 @@ function Layout({ children }) {
       {/* Erişilebilirlik Araç Çubuğu */}
       <AccessibilityToolbar />
       
-      {/* AI Chatbot */}
-      <AIChatbot />
+      {/* Basit Chatbot */}
+      <SimpleChatbot />
       
       {/* Header */}
       <Header />

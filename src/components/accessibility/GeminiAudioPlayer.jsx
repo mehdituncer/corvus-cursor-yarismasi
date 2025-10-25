@@ -115,43 +115,15 @@ function GeminiAudioPlayer({ text, label = "Dinle" }) {
     } catch (err) {
       console.error('Ses oluşturma hatası:', err)
       
-      // API limit hatası - otomatik fallback'e geç
+      // API limit hatası
       if (err.message?.includes('429') || err.message?.includes('Too Many Requests') || err.message?.includes('quota')) {
-        setError('⚠️ API limiti aşıldı. Tarayıcı sesi kullanılıyor...')
-        
-        // Otomatik olarak tarayıcı TTS'e geç
-        try {
-          await this.playWithBrowserTTS(text)
-        } catch (fallbackErr) {
-          setError('Ses çalınamadı: ' + fallbackErr.message)
-        }
+        setError('⚠️ API limiti aşıldı. Lütfen birkaç saat sonra tekrar deneyin.')
       } else {
-        setError('Gemini TTS başarısız. Tarayıcı sesini deneyin.')
+        setError('Ses oluşturulamadı: ' + err.message)
       }
     } finally {
       setIsLoading(false)
     }
-  }
-
-  // Tarayıcı TTS ile çal
-  async playWithBrowserTTS(text) {
-    if (!('speechSynthesis' in window)) {
-      throw new Error('Tarayıcınız sesli okuma özelliğini desteklemiyor')
-    }
-
-    window.speechSynthesis.cancel()
-
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'tr-TR'
-    utterance.rate = 0.9
-    utterance.pitch = 1
-    utterance.volume = 1
-
-    utterance.onstart = () => setIsPlaying(true)
-    utterance.onend = () => setIsPlaying(false)
-    utterance.onerror = () => setIsPlaying(false)
-
-    window.speechSynthesis.speak(utterance)
   }
 
   const handlePlayPause = () => {

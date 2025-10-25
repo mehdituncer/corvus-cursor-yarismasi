@@ -626,89 +626,43 @@ Türkçe yanıt ver.`
     }
   }
 
+
   /**
-   * Chatbot ile sohbet et
-   * @param {string} userMessage - Kullanıcı mesajı
-   * @param {Array} chatHistory - Önceki mesajlar
+   * Basit chat - tek soru/cevap
+   * @param {string} question - Kullanıcı sorusu
    * @returns {Promise<string>} AI cevabı
    */
-  async chatWithBot(userMessage, chatHistory = []) {
+  async simpleChat(question) {
     if (!this.genAI) {
       throw new Error('Gemini API yapılandırılmamış')
     }
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-pro' })
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
       
-      // Sistem promptu - Chatbot'un rolü ve bilgisi
-      const systemContext = `Sen Erişilebilir Akademi'nin yardımcı asistanısın. Görme ve işitme engelli öğrenciler için tasarlanmış bu platformun özelliklerini açıklıyorsun.
+      const prompt = `Sen Erişilebilir Akademi yardım asistanısın. Kısa ve öz cevap ver.
 
-PLATFORM ÖZELLİKLERİ:
+Platform özellikleri:
+- Görme engelliler: Ekran okuyucu, büyük yazı, kontrast modu, sesli okuma
+- İşitme engelliler: Altyazı, transkript, görsel bildirim
+- Materyal yükleme: PDF/PPTX/görsel/video yükle, AI analiz eder
+- AI: Görsel açıklama, içerik basitleştirme, quiz üretimi
+- Tema: Aydınlık, karanlık, yüksek kontrast
 
-👁️ GÖRME ENGELLİLER İÇİN:
-- Ekran okuyucu desteği (JAWS, NVDA, VoiceOver)
-- Yazı boyutu kontrolü (12-24px)
-- Yüksek kontrast modu
-- Gemini AI ile sesli okuma (6 farklı ses)
-- Tüm görseller için AI açıklaması
-- Klavye ile tam navigasyon
+Kullanıcı sorusu: ${question}
 
-👂 İŞİTME ENGELLİLER İÇİN:
-- Video altyazıları
-- Otomatik transkript (AI ile)
-- Görsel bildirimler
-- İnfografik ve görsel materyaller
+Kısa, dostça cevap ver (2-3 cümle). Türkçe.`
 
-🤖 AI ÖZELLİKLERİ:
-- Görsel analizi ve alt metin
-- PDF/PPTX analizi ve öğretici anlatım
-- Video Speech-to-Text (konuşma → metin)
-- İçerik basitleştirme ve özet
-- Otomatik quiz üretimi
-- Gemini TTS ile profesyonel sesli okuma
-
-📤 MATERYAL YÜKLEME:
-- PDF, PowerPoint, Word dosyaları
-- Görseller (JPG, PNG, GIF, WebP)
-- Videolar (MP4, WebM, MOV)
-- AI ile otomatik analiz ve erişilebilir hale getirme
-
-🎨 TEMAlar:
-- Aydınlık tema
-- Karanlık tema
-- Yüksek kontrast modu
-
-GÖREVIN:
-- Dostça ve yardımsever ol
-- Kısa ve öz cevaplar ver
-- Emoji kullan ama abartma
-- Örnekler ver
-- Görme/işitme engelli kullanıcılar için empati göster
-- Platform özelliklerini net açıkla
-
-Türkçe yanıt ver.`
-
-      // Chat history'yi Gemini formatına çevir
-      const history = chatHistory.slice(-10).map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      }))
-
-      // Chat session başlat
-      const chat = model.startChat({
-        history: history,
-        generationConfig: {
-          temperature: 0.9,
-          topP: 1,
-          maxOutputTokens: 500,
-        },
-      })
-
-      const result = await chat.sendMessage(systemContext + '\n\nKullanıcı sorusu: ' + userMessage)
+      const result = await model.generateContent(prompt)
       const response = await result.response
       return response.text()
     } catch (error) {
-      console.error('Chatbot hatası:', error)
+      console.error('Chat hatası:', error)
+      
+      // Rate limit hatası
+      if (error.message?.includes('429')) {
+        throw new Error('API limiti aşıldı. Lütfen birkaç dakika bekleyin.')
+      }
       throw error
     }
   }
