@@ -145,7 +145,7 @@ function HomePage() {
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link to="/materyal-yukle">
-              <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100">
+              <Button size="lg" className="hover:bg-gray-100">
                 Materyal Yükle
               </Button>
             </Link>
